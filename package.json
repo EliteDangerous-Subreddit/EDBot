@@ -1,0 +1,7 @@
+{
+  "name": "EDBot",
+  "version": "1.0.0",
+  "dependencies": {
+    "snoowrap": "^1.15.2"
+  }
+}
