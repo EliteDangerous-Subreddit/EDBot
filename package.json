@@ -2,6 +2,8 @@
   "name": "EDBot",
   "version": "1.0.0",
   "dependencies": {
+    "axios": "^0.18.0",
+    "node-google-calendar": "^1.1.1",
     "snoowrap": "^1.15.2"
   }
 }
