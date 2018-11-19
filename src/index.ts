@@ -1,12 +1,14 @@
 'use strict';
 // Add SnooStorm for comment and submission streams
 import Snoowrap from "snoowrap";
+require('./helpers');
+
+import {updateServiceStatus} from "./sidebar/serviceStatus";
 
 const credentials = require('./credentials');
-const {updateServiceStatus} = require('./sidebar/serviceStatus');
+
 const {updateCalendar} = require("./sidebar/calendar");
 const r = new Snoowrap(credentials);
-require('./helpers');
 
 const timeToUpdateSidebar = 1000 * 60 * 15; // every 15 minutes - milliseconds * seconds * minutes
 updateSidebar(r);
@@ -24,17 +26,10 @@ function updateSidebar(r: Snoowrap) {
             let sidebar_text : string = sidebar.content_md;
             sidebar_text = await updateServiceStatus(sidebar_text);
             sidebar_text = await updateCalendar(sidebar_text);
-            //console.log(sidebar_text);
-            let ignored = await r.composeMessage({
-                to: 'actually_an_aardvark',
-                subject: "Hi, how's it going?",
-                text: JSON.stringify(sidebar_text.substr(0,100))
-            });
-            console.log(ignored);
-            /*let ignored = r.getSubreddit('EliteDangerous').getWikiPage("config/sidebar").edit({
+            let ignored = r.getSubreddit('EliteDangerous').getWikiPage("config/sidebar").edit({
                 text: sidebar_text,
                 reason: 'Automated Edit - testing'
-            });*/
+            }).then(console.log);
         });
 
 }
