@@ -1,4 +1,4 @@
 /node_modules/*
 credentials.json
 /.idea/*
-/sidebar/googleapi-key.json
+/**/*/googleapi-key.json

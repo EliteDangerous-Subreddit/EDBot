@@ -39,7 +39,7 @@ async function getStoreStatus() {
     });
 }
 
-async function updateServiceStatus(sidebar) {
+async function updateServiceStatus(sidebar: String) {
     let serverStatus = await getServerStatus();
     let storeStatus = await getStoreStatus();
     let status = `${serverStatus}\n${storeStatus}`;
