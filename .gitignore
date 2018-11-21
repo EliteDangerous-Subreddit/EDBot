@@ -2,3 +2,4 @@
 credentials.json
 /.idea/*
 /**/*/googleapi-key.json
+/lib/*

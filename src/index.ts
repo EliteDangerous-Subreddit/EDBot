@@ -1,6 +1,8 @@
 'use strict';
 // Add SnooStorm for comment and submission streams
 
+import moment = require("moment");
+
 let SnooStorm = require("snoostorm");
 
 import Snoowrap from "snoowrap";
@@ -11,6 +13,7 @@ import {updateServiceStatus} from "./sidebar/serviceStatus";
 import {updateCalendar} from "./sidebar/calendar";
 
 
+// noinspection MagicNumberJS
 const timeToUpdateSidebar = 1000 * 60 * 15; // every 15 minutes - milliseconds * seconds * minutes
 
 main();
@@ -18,8 +21,8 @@ main();
 function main() {
     const r = new Snoowrap(credentials);
     const snoostorm: any = new SnooStorm(r);
-    //updateSidebar(r);
-    monitorSubmissions(snoostorm);
+    updateSidebar(r);
+    //monitorSubmissions(snoostorm);
 }
 
 /**
@@ -27,6 +30,7 @@ function main() {
  * @param {Snoowrap} r
  */
 function updateSidebar(r: Snoowrap) {
+    console.log("Possibly updating sidebar");
     setTimeout(updateSidebar, timeToUpdateSidebar, r);
     r.getSubreddit('EliteDangerous')
         .getWikiPage("config/sidebar")
@@ -35,10 +39,12 @@ function updateSidebar(r: Snoowrap) {
             let sidebar_text : string = sidebar.content_md;
             sidebar_text = await updateServiceStatus(sidebar_text);
             sidebar_text = await updateCalendar(sidebar_text);
-            let ignored = r.getSubreddit('EliteDangerous').getWikiPage("config/sidebar").edit({
-                text: sidebar_text,
-                reason: 'Automated Edit - testing'
-            }).then(console.log);
+            if (sidebar_text !== sidebar.content_md) {
+                let ignored = r.getSubreddit('EliteDangerous').getWikiPage("config/sidebar").edit({
+                    text: sidebar_text,
+                    reason: 'Automated Edit - ' + moment().utc().format("DD MMM YYYY HH:mm:SSS UTC")
+                }).then(console.log);
+            }
         });
 }
 
