@@ -1,6 +1,7 @@
-const CONFIG = require('./calendar-settings');
+import * as Config from "./calendar-settings";
 const CalendarAPI = require('node-google-calendar');
-let cal = new CalendarAPI(CONFIG);
+
+let cal = new CalendarAPI(Config);
 
 let dateStart = new Date();
 dateStart.setHours(0, 0, 0, 0);
@@ -20,9 +21,9 @@ let params = {
     orderBy: 'startTime'
 }; 	//Optional query parameters referencing google APIs
 
-function updateCalendar(sidebar) {
-    return cal.Events.list(CONFIG.calendarId.primary, params)
-        .then(events => {
+export async function updateCalendar(sidebar: string) {
+    return cal.Events.list(Config.CALENDAR_ID.primary, params)
+        .then((events: Array<any>) => {
             //Success
             let eventlessSidebarLength = sidebar.length - sidebar.sidebarSectionLength("calendar");
             let sidebarEvents = '\n\n' + [
@@ -55,7 +56,7 @@ function updateCalendar(sidebar) {
                     date = eventDate.toUTCShortFormat()
                 }
 
-                date += ` _${eventDate.toLocaleTimeString([], {timeZone: "UTC", hour: '2-digit', minute:'2-digit'})}_`;
+                date += ` _${eventDate.toLocaleTimeString([], {timeZone: "UTC", hour: '2-digit', minute: '2-digit'})}_`;
                 // these four fields form each table line
                 let tableLine = [
                     date,
@@ -72,10 +73,8 @@ function updateCalendar(sidebar) {
             }
             sidebarEvents += ">[See more](https://bit.ly/2vbO3f6)\n\n";
             return sidebar.replaceSidebarSection("calendar", sidebarEvents)
-        }).catch(err => {
-        //Error
-        console.log('Error: listSingleEvents -' + err.message);
-    });
+        }).catch((err: Error) => {
+            //Error
+            console.log('Error: listSingleEvents -' + err.message);
+        });
 }
-
-module.exports.updateCalendar = updateCalendar;

@@ -1,13 +1,12 @@
 'use strict';
 // Add SnooStorm for comment and submission streams
 import Snoowrap from "snoowrap";
-require('./helpers');
-
-import {updateServiceStatus} from "./sidebar/serviceStatus";
+import "./helpers";
 
 const credentials = require('./credentials');
 
-const {updateCalendar} = require("./sidebar/calendar");
+import {updateServiceStatus} from "./sidebar/serviceStatus";
+import {updateCalendar} from "./sidebar/calendar";
 const r = new Snoowrap(credentials);
 
 const timeToUpdateSidebar = 1000 * 60 * 15; // every 15 minutes - milliseconds * seconds * minutes

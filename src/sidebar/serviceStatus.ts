@@ -1,26 +1,21 @@
-let axios = require("axios");
-
-const StatusCode = {
-    OK: 2,
-    Issues_Detected: 1,
-    Offline: 0
-};
-
+import axios from "axios";
+import {FDEVStatus, StatusCode} from "./FDEVStatus";
 let retry = 0;
+
 
 async function getServerStatus() {
     let request = await axios.get("http://hosting.zaonce.net/launcher-status/status.json");
-    request = request.data;
+    let data: FDEVStatus = request.data;
     let htmlResponse = "";
-    switch (request.status) {
+    switch (data.status) {
         case StatusCode.OK:
             htmlResponse = `[Servers: Online](#status_green_servers 'Servers - Online')`;
             break;
         case StatusCode.Issues_Detected:
-            htmlResponse = `[Servers: ${request.text}](#status_yellow_servers 'Servers -  ${request.text}')`;
+            htmlResponse = `[Servers: ${data.text}](#status_yellow_servers 'Servers -  ${data.text}')`;
             break;
         case StatusCode.Offline:
-            htmlResponse = `[Servers: ${request.text}](#status_red_servers 'Servers -  ${request.text}')`;
+            htmlResponse = `[Servers: ${data.text}](#status_red_servers 'Servers -  ${data.text}')`;
             break;
     }
     return htmlResponse;
