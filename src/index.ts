@@ -1,16 +1,26 @@
 'use strict';
 // Add SnooStorm for comment and submission streams
+
+let SnooStorm = require("snoostorm");
+
 import Snoowrap from "snoowrap";
 import "./helpers";
-
-const credentials = require('./credentials');
-
+import credentials from "./credentials.json";
+import frontier from "./frontier.json";
 import {updateServiceStatus} from "./sidebar/serviceStatus";
 import {updateCalendar} from "./sidebar/calendar";
-const r = new Snoowrap(credentials);
+
 
 const timeToUpdateSidebar = 1000 * 60 * 15; // every 15 minutes - milliseconds * seconds * minutes
-updateSidebar(r);
+
+main();
+
+function main() {
+    const r = new Snoowrap(credentials);
+    const snoostorm: any = new SnooStorm(r);
+    //updateSidebar(r);
+    monitorSubmissions(snoostorm);
+}
 
 /**
  * Updates sidebar with new information
@@ -30,6 +40,26 @@ function updateSidebar(r: Snoowrap) {
                 reason: 'Automated Edit - testing'
             }).then(console.log);
         });
-
 }
 
+function monitorSubmissions(SnooStorm: any) {
+    let submissionStream = SnooStorm.SubmissionStream({
+        "subreddit": "EliteDangerous", // TODO: Change to env file and listen to Elite subreddits
+        "results": 5,
+        "pollTime": 2000
+    });
+    console.log("Listening to submissions");
+    submissionStream.on("submission", function(submission: Snoowrap.Submission) {
+        notifyDiscord(submission)
+    });
+}
+
+function notifyDiscord(submission: Snoowrap.Submission) {
+    if (isFromFrontier(submission.author.name) && submission.subreddit.display_name === "EliteDangerous") {
+        // TODO: Send webhook to Discord (hide webhook URL in env file)
+    }
+}
+
+function isFromFrontier(author: string): boolean {
+    return frontier.employees.indexOf(author) >= 0
+}
