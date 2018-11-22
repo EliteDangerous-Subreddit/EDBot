@@ -6,7 +6,6 @@ import moment = require("moment");
 let SnooStorm = require("snoostorm");
 
 import Snoowrap from "snoowrap";
-import "./helpers";
 import * as config from "./config.json";
 import axios from "axios";
 import credentials from "./credentials.json";

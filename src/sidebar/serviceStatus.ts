@@ -1,7 +1,8 @@
+"use strict";
+import "../helpers";
 import axios from "axios";
 import {FDEVStatus, StatusCode} from "./FDEVStatus";
 let retry = 0;
-
 
 async function getServerStatus() {
     let request = await axios.get("http://hosting.zaonce.net/launcher-status/status.json");

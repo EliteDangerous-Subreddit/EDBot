@@ -1,3 +1,5 @@
+"use strict";
+import "../helpers";
 import * as Config from "./calendar-settings";
 const CalendarAPI = require('node-google-calendar');
 
