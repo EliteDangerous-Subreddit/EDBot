@@ -40,12 +40,18 @@ function updateSidebar(r: Snoowrap) {
             let sidebar_text: string|Error = sidebar.content_md;
 
             sidebar_text = await updateServiceStatus(sidebar_text).catch((err : Error) => err);
-            if (sidebar_text instanceof Error) return;
+            if (sidebar_text instanceof Error) {
+                console.log(sidebar_text);
+                return;
+            }
 
             sidebar_text = await updateCalendar(sidebar_text).catch((err : Error) => err);
-            if (sidebar_text instanceof Error) return;
+            if (sidebar_text instanceof Error) {
+                console.log(sidebar_text);
+                return;
+            }
 
-            if (sidebar_text !== sidebar.content_md) {
+            if (sidebar_text && sidebar_text !== sidebar.content_md) {
                 let ignored = r.getSubreddit('EliteDangerous').getWikiPage("config/sidebar").edit({
                     text: sidebar_text,
                     reason: 'Automated Edit - ' + moment().utc().format("DD MMM YYYY HH:mm.SSS UTC")
