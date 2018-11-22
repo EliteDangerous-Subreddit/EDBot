@@ -34,9 +34,15 @@ async function getStoreStatus() {
     });
 }
 
-export async function updateServiceStatus(sidebar: String) {
-    let serverStatus: string = await getServerStatus();
-    let storeStatus: string = await getStoreStatus();
+export async function updateServiceStatus(sidebar: string) {
+    let serverStatus: string|Error = await getServerStatus().catch((err : any) => new Error(err));
+    let storeStatus: string|Error = await getStoreStatus().catch((err : any) => new Error(err));
+    if (serverStatus instanceof Error) {
+        throw serverStatus
+    }
+    else if (storeStatus instanceof Error) {
+        throw storeStatus
+    }
     let status: string = `${serverStatus}\n${storeStatus}`;
     return sidebar.replaceSidebarSection("status", status)
 }

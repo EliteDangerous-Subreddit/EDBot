@@ -38,13 +38,14 @@ function updateSidebar(r: Snoowrap) {
         .getWikiPage("config/sidebar")
         .fetch()
         .then(async (sidebar: Snoowrap.WikiPage) => {
-            if (sidebar.content_md.length === 0) {
-                console.log("sidebar is empty", sidebar);
-                return;
-            }
-            let sidebar_text: string = sidebar.content_md;
-            sidebar_text = await updateServiceStatus(sidebar_text);
-            sidebar_text = await updateCalendar(sidebar_text);
+            let sidebar_text: string|Error = sidebar.content_md;
+
+            sidebar_text = await updateServiceStatus(sidebar_text).catch((err : Error) => err);
+            if (sidebar_text instanceof Error) return;
+
+            sidebar_text = await updateCalendar(sidebar_text).catch((err : Error) => err);
+            if (sidebar_text instanceof Error) return;
+
             if (sidebar_text !== sidebar.content_md) {
                 let ignored = r.getSubreddit('EliteDangerous').getWikiPage("config/sidebar").edit({
                     text: sidebar_text,

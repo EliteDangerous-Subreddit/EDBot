@@ -21,7 +21,7 @@ let params = {
     orderBy: 'startTime'
 }; 	//Optional query parameters referencing google APIs
 
-export async function updateCalendar(sidebar: string) {
+export function updateCalendar(sidebar: string) {
     return cal.Events.list(Config.CALENDAR_ID.primary, params)
         .then((events: Array<any>) => {
             //Success
@@ -73,8 +73,5 @@ export async function updateCalendar(sidebar: string) {
             }
             sidebarEvents += ">[See more](https://bit.ly/2vbO3f6)\n\n";
             return sidebar.replaceSidebarSection("calendar", sidebarEvents)
-        }).catch((err: Error) => {
-            //Error
-            console.log('Error: listSingleEvents -' + err.message);
         });
 }
