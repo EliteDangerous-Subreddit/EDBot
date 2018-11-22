@@ -33,7 +33,10 @@ String.prototype.replaceSidebarSection = function (name: string, content: string
     let searchEnd = `[](#sb-${name}-end)`;
     const end = this.indexOf(searchEnd) - start;
 
-    if (this.indexOf(searchStart) < 0 || this.indexOf(searchEnd) < 0) return this.toString();
+    if (this.indexOf(searchStart) < 0 || this.indexOf(searchEnd) < 0) {
+        // @ts-ignore
+        return this;
+    }
     return this.splice(start, end, content);
 };
 

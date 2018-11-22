@@ -35,8 +35,8 @@ async function getStoreStatus() {
 }
 
 export async function updateServiceStatus(sidebar: String) {
-    let serverStatus = await getServerStatus();
-    let storeStatus = await getStoreStatus();
-    let status = `${serverStatus}\n${storeStatus}`;
+    let serverStatus: string = await getServerStatus();
+    let storeStatus: string = await getStoreStatus();
+    let status: string = `${serverStatus}\n${storeStatus}`;
     return sidebar.replaceSidebarSection("status", status)
 }
