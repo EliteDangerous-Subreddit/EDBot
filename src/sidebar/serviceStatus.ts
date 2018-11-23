@@ -23,9 +23,9 @@ async function getServerStatus() {
 }
 
 async function getStoreStatus() {
-    return axios.get("https://www.frontierstore.net/").then(() => retry = 0).catch(() => retry++).then(() => {
+    return await axios.get("https://www.frontierstore.net/").then(() => retry = 0).catch(() => retry++).then(() => {
         let htmlResponse;
-        if (retry >= 5)
+        if (retry >= 3)
             htmlResponse = "[Store: Offline](#status_red_store 'Store - Offline')";
         else if (retry > 0)
             htmlResponse = "[Store: Issues Detected](#status_yellow_store 'Store - Issues Detected')";

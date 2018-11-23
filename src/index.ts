@@ -15,7 +15,7 @@ import {updateCalendar} from "./sidebar/calendar";
 
 
 // noinspection MagicNumberJS
-const timeToUpdateSidebar = 1000 * 60 * 15; // every 15 minutes - milliseconds * seconds * minutes
+const timeToUpdateSidebar = 1000 * 60 * 10; // every 10 minutes - milliseconds * seconds * minutes
 
 main();
 
@@ -31,7 +31,7 @@ function main() {
  * @param {Snoowrap} r
  */
 function updateSidebar(r: Snoowrap) {
-    console.log(`[${moment().format("HH:mm.SSS")}] Possibly updating sidebar`);
+    console.log(`[${moment().format("HH:mm.SSS")}] Checking if sidebar needs to be updated`);
     setTimeout(updateSidebar, timeToUpdateSidebar, r);
     r.getSubreddit('EliteDangerous')
         .getWikiPage("config/sidebar")
