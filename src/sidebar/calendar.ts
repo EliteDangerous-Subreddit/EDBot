@@ -24,7 +24,7 @@ let params = {
 }; 	//Optional query parameters referencing google APIs
 
 export function updateCalendar(sidebar: string) {
-    return cal.Events.list(Config.CALENDAR_ID.primary, params)
+    let events = cal.Events.list(Config.CALENDAR_ID.primary, params)
         .then((events: Array<any>) => {
             //Success
             let eventlessSidebarLength = sidebar.length - sidebar.sidebarSectionLength("calendar");
@@ -76,4 +76,5 @@ export function updateCalendar(sidebar: string) {
             sidebarEvents += ">[See more](https://bit.ly/2vbO3f6)\n\n";
             return sidebar.replaceSidebarSection("calendar", sidebarEvents)
         });
+    return events;
 }
