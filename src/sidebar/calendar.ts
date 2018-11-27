@@ -16,14 +16,13 @@ const LENGTH_LIMIT = 10240;
 
 let dateEnd = new Date(dateStart.getTime() + (DAY_RANGE * 24 * 60 * 60 * 1000));
 
-let params = {
-    timeMin: dateStart.toISOString(),
-    timeMax: dateEnd.toISOString(),
-    singleEvents: true,
-    orderBy: 'startTime'
-}; 	//Optional query parameters referencing google APIs
-
 export function updateCalendar(sidebar: string) {
+    let params = {
+        timeMin: dateStart.toISOString(),
+        timeMax: dateEnd.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime'
+    };
     return cal.Events.list(Config.CALENDAR_ID.primary, params)
         .then((events: Array<any>) => {
             //Success
