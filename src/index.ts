@@ -2,6 +2,7 @@
 // Add SnooStorm for comment and submission streams
 
 import moment = require("moment");
+import EventEmitter from "events"
 
 let SnooStorm = require("snoostorm");
 
@@ -12,18 +13,35 @@ import credentials from "./credentials.json";
 import frontier from "./frontier.json";
 import {updateServiceStatus} from "./sidebar/serviceStatus";
 import {updateCalendar} from "./sidebar/calendar";
+import ForumThread from "./objects/ForumThread";
+import Parser from "rss-parser";
+export let parser = new Parser();
 
 
 // noinspection MagicNumberJS
 const timeToUpdateSidebar = 1000 * 60 * 10; // every 10 minutes - milliseconds * seconds * minutes
+const timeToCheckForums = 1000 * 60 * 5; // every 5 minutes - milliseconds * seconds * minutes
 
+class MainEmitter extends EventEmitter {}
+export const mainEmitter = new MainEmitter;
+let currDate = new Date();
 main();
 
 function main() {
     const r = new Snoowrap(credentials);
-    const snoostorm: any = new SnooStorm(r);
+    const snooStorm: any = new SnooStorm(r);
+
     updateSidebar(r);
-    monitorSubmissions(snoostorm);
+    monitorSubmissions(snooStorm);
+    let ignored = monitorForums();
+
+    mainEmitter.on("submission", function (submission: Snoowrap.Submission) {
+        notifyDiscordSubmission(submission)
+    });
+
+    mainEmitter.on("forum_thread", function (forumThread: ForumThread) {
+        notifyDiscordForumThread(forumThread);
+    })
 }
 
 /**
@@ -60,6 +78,30 @@ function updateSidebar(r: Snoowrap) {
         });
 }
 
+async function monitorForums() {
+    setTimeout(monitorForums, timeToCheckForums);
+    console.log(`[${moment().format("HH:mm.SSS")}] Checking new forum posts`);
+    let feed = await parser.parseURL('https://ed.miggy.org/devtracker/ed-dev-posts.rss');
+
+    feed.items.forEach(item => {
+        // Is it a new thread?
+        if (item.link.match(/^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*[^?]$/)) {
+            let thread = new ForumThread;
+            let titleMatch : RegExpMatchArray|null = item.title.match(/(^[A-za-z0-9 ]*|Adam Bourke-Waite) - (.*)\((.*)\)$/);
+            if (titleMatch !== null) {
+                thread.title = titleMatch[2];
+                thread.from = titleMatch[1];
+                thread.permalink = item.link;
+                thread.created_at = new Date(item.pubDate);
+            }
+            if (thread.created_at > currDate) {
+                mainEmitter.emit("forum_thread", thread);
+            }
+        }
+    });
+    currDate = new Date();
+}
+
 function monitorSubmissions(SnooStorm: any) {
     let submissionStream = SnooStorm.SubmissionStream({
         "subreddit": "EliteDangerous", // TODO: Change to env file and listen to Elite subreddits
@@ -68,11 +110,30 @@ function monitorSubmissions(SnooStorm: any) {
     });
     console.log("Listening to submissions");
     submissionStream.on("submission", function (submission: Snoowrap.Submission) {
-        notifyDiscord(submission)
+        mainEmitter.emit("submission", submission);
     });
 }
 
-function notifyDiscord(submission: Snoowrap.Submission) {
+function notifyDiscordForumThread(thread: ForumThread) {
+    const embed: any = {
+        "content": "New Frontier Thread on forums",
+        "embeds": [{
+            "title": thread.title,
+            "url": thread.permalink,
+            "color": 16740608,
+            "timestamp": thread.created_at.toISOString(),
+            "footer": {
+                "text": "u/EliteDangerousBot"
+            },
+            "author": {
+                "name": thread.from
+            }
+        }]
+    };
+    axios.post(config.webhook, embed).catch(console.log)
+}
+
+function notifyDiscordSubmission(submission: Snoowrap.Submission) {
     if (isFromFrontier(submission.author.name) && submission.subreddit.display_name === "EliteDangerous") {
         const embed: any = {
             "content": "New Frontier Post on Reddit",

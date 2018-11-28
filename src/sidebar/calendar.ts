@@ -5,26 +5,23 @@ const CalendarAPI = require('node-google-calendar');
 
 let cal = new CalendarAPI(Config);
 
-let dateStart = new Date();
-dateStart.setHours(0, 0, 0, 0);
-
 // how many days ahead to list events for
 const DAY_RANGE = 7;
 
 // the maximum sidebar length, set by Reddit
 const LENGTH_LIMIT = 10240;
 
-let dateEnd = new Date(dateStart.getTime() + (DAY_RANGE * 24 * 60 * 60 * 1000));
-
-let params = {
-    timeMin: dateStart.toISOString(),
-    timeMax: dateEnd.toISOString(),
-    singleEvents: true,
-    orderBy: 'startTime'
-}; 	//Optional query parameters referencing google APIs
-
 export function updateCalendar(sidebar: string) {
-    let events = cal.Events.list(Config.CALENDAR_ID.primary, params)
+    let dateStart = new Date();
+    dateStart.setHours(0, 0, 0, 0);
+    let dateEnd = new Date(dateStart.getTime() + (DAY_RANGE * 24 * 60 * 60 * 1000));
+    let params = {
+        timeMin: dateStart.toISOString(),
+        timeMax: dateEnd.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime'
+    };
+    return cal.Events.list(Config.CALENDAR_ID.primary, params)
         .then((events: Array<any>) => {
             //Success
             let eventlessSidebarLength = sidebar.length - sidebar.sidebarSectionLength("calendar");
@@ -76,5 +73,4 @@ export function updateCalendar(sidebar: string) {
             sidebarEvents += ">[See more](https://bit.ly/2vbO3f6)\n\n";
             return sidebar.replaceSidebarSection("calendar", sidebarEvents)
         });
-    return events;
 }
