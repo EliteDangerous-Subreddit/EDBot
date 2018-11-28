@@ -14,12 +14,14 @@ import frontier from "./frontier.json";
 import {updateServiceStatus} from "./sidebar/serviceStatus";
 import {updateCalendar} from "./sidebar/calendar";
 import ForumThread from "./objects/ForumThread";
+// @ts-ignore
 import Parser from "rss-parser";
 export let parser = new Parser();
 
 
 // noinspection MagicNumberJS
 const timeToUpdateSidebar = 1000 * 60 * 10; // every 10 minutes - milliseconds * seconds * minutes
+// noinspection MagicNumberJS
 const timeToCheckForums = 1000 * 60 * 5; // every 5 minutes - milliseconds * seconds * minutes
 
 class MainEmitter extends EventEmitter {}
@@ -83,11 +85,11 @@ async function monitorForums() {
     console.log(`[${moment().format("HH:mm.SSS")}] Checking new forum posts`);
     let feed = await parser.parseURL('https://ed.miggy.org/devtracker/ed-dev-posts.rss');
 
-    feed.items.forEach(item => {
+    feed.items.forEach((item: Parser.Items)=> {
         // Is it a new thread?
         if (item.link.match(/^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*[^?]$/)) {
             let thread = new ForumThread;
-            let titleMatch : RegExpMatchArray|null = item.title.match(/(^[A-za-z0-9 ]*|Adam Bourke-Waite) - (.*)\((.*)\)$/);
+            let titleMatch : RegExpMatchArray|null = item.title.match(/^(.*?) - (.*)\((.*)\)$/);
             if (titleMatch !== null) {
                 thread.title = titleMatch[2];
                 thread.from = titleMatch[1];
