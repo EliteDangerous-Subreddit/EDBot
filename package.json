@@ -5,6 +5,7 @@
     "axios": "^0.18.0",
     "moment": "^2.22.2",
     "node-google-calendar": "^1.1.1",
+    "rss-parser": "^3.5.4",
     "snoostorm": "0.0.5",
     "snoowrap": "^1.15.2"
   },
