@@ -121,7 +121,7 @@ function notifyDiscordForumThread(thread: ForumThread) {
             "title": thread.title,
             "url": thread.permalink,
             "color": 16740608,
-            "timestamp": thread.created_at,
+            "timestamp": thread.created_at.toISOString(),
             "footer": {
                 "text": "u/EliteDangerousBot"
             },
