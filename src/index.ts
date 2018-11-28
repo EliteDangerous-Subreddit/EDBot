@@ -2,6 +2,7 @@
 // Add SnooStorm for comment and submission streams
 
 import moment = require("moment");
+import EventEmitter from "events"
 
 let SnooStorm = require("snoostorm");
 
@@ -17,13 +18,21 @@ import {updateCalendar} from "./sidebar/calendar";
 // noinspection MagicNumberJS
 const timeToUpdateSidebar = 1000 * 60 * 10; // every 10 minutes - milliseconds * seconds * minutes
 
+class MainEmitter extends EventEmitter {}
+export const mainEmitter = new MainEmitter;
+
 main();
 
 function main() {
     const r = new Snoowrap(credentials);
-    const snoostorm: any = new SnooStorm(r);
+    const snooStorm: any = new SnooStorm(r);
+
     updateSidebar(r);
-    monitorSubmissions(snoostorm);
+    monitorSubmissions(snooStorm);
+
+    mainEmitter.on("submission", function (submission: Snoowrap.Submission) {
+        notifyDiscord(submission)
+    })
 }
 
 /**
@@ -68,7 +77,7 @@ function monitorSubmissions(SnooStorm: any) {
     });
     console.log("Listening to submissions");
     submissionStream.on("submission", function (submission: Snoowrap.Submission) {
-        notifyDiscord(submission)
+        mainEmitter.emit("submission", submission);
     });
 }
 
