@@ -12,6 +12,8 @@ async function getServerStatus() {
         case StatusCode.OK:
             htmlResponse = `[Servers: Online](#status_green_servers 'Servers - Online')`;
             break;
+        default:
+            console.log("Issues detected", data);
         case StatusCode.Issues_Detected:
             htmlResponse = `[Servers: ${data.text}](#status_yellow_servers 'Servers -  ${data.text}')`;
             break;
