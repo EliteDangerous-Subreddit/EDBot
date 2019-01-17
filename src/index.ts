@@ -92,7 +92,7 @@ async function monitorForums() {
     console.log(`[${moment().format("HH:mm.SSS")}] Checking new forum posts`);
     let feed = await parser.parseURL('https://ed.miggy.org/devtracker/ed-dev-posts.rss');
 
-    feed.items.forEach((item: Parser.Items) => {
+    feed.items.forEach(item => {
         // Is it a new thread?
         if (item.link.match(forum_original_thread_match)) {
             let thread = new ForumThread;
