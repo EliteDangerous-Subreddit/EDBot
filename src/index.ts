@@ -14,6 +14,8 @@ import frontier from "./frontier.json";
 import {updateServiceStatus} from "./sidebar/serviceStatus";
 import {updateCalendar} from "./sidebar/calendar";
 import ForumThread from "./objects/ForumThread";
+import { JSDOM } from "jsdom"
+
 // @ts-ignore
 import Parser from "rss-parser";
 export let parser = new Parser();
@@ -27,9 +29,13 @@ const timeToCheckForums = 1000 * 60 * 5; // every 5 minutes - milliseconds * sec
 class MainEmitter extends EventEmitter {}
 export const mainEmitter = new MainEmitter;
 let currDate = new Date();
+
+const forum_original_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*[^?]$/;
+const forum_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*([^?]|(\?.*?post([0-9]*)))/;
+
 main();
 
-function main() {
+async function main() {
     const r = new Snoowrap(credentials);
     const snooStorm: any = new SnooStorm(r);
 
@@ -38,7 +44,8 @@ function main() {
     let ignored = monitorForums();
 
     mainEmitter.on("submission", function (submission: Snoowrap.Submission) {
-        notifyDiscordSubmission(submission)
+        notifyDiscordSubmission(submission);
+        //checkIfForumThread(submission)
     });
 
     mainEmitter.on("forum_thread", function (forumThread: ForumThread) {
@@ -85,9 +92,9 @@ async function monitorForums() {
     console.log(`[${moment().format("HH:mm.SSS")}] Checking new forum posts`);
     let feed = await parser.parseURL('https://ed.miggy.org/devtracker/ed-dev-posts.rss');
 
-    feed.items.forEach((item: Parser.Items)=> {
+    feed.items.forEach((item: Parser.Items) => {
         // Is it a new thread?
-        if (item.link.match(/^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*[^?]$/)) {
+        if (item.link.match(forum_original_thread_match)) {
             let thread = new ForumThread;
             let titleMatch : RegExpMatchArray|null = item.title.match(/^(.*?) - (.*)\((.*)\)$/);
             if (titleMatch !== null) {
@@ -133,6 +140,52 @@ function notifyDiscordForumThread(thread: ForumThread) {
         }]
     };
     axios.post(config.webhook, embed).catch(console.log)
+}
+
+async function checkIfForumThread(submission: Snoowrap.Submission) {
+    let regex = RegExp(forum_thread_match, 'gi');
+    let match = regex.exec(submission.url);
+    if (match) {
+        await migrateForumThreadToSubmission(submission, match[2]);
+    }
+}
+
+async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, linked_comment: string = "") {
+    let body : string|Error = await getLinkedThreadCommentBody(submission.url, linked_comment);
+
+    if (body instanceof Error) {
+        return;
+    }
+    body = body.replace(/\n/g, "\n>");
+
+    if (body.length < 2) {
+        submission.reply(`Copy-paste\n\n${body}\n\n---^(_This copy-paste was done by a bot, report if it is broken_)`);
+    }
+}
+
+async function getLinkedThreadCommentBody(url: string, linked_comment: string = "") {
+    let body : string|Error = await axios.get(url).then(response => response.data).catch((err : Error) => err);
+
+    if (body instanceof Error) {
+        return body;
+    }
+    let dom = new JSDOM(body);
+    let comment : HTMLElement|null;
+
+    if (linked_comment.match(/[a-z]+[0-9]+/)) {
+        linked_comment = linked_comment.replace("post", "post_message_");
+    }
+
+    if (linked_comment.length > 0) {
+        comment = dom.window.document.getElementById(linked_comment)
+    }
+    else {
+        comment = dom.window.document.querySelector(".postbody .content .postcontent")
+    }
+    if (comment === null || comment.textContent === null) {
+        return new Error("could not get comment body");
+    }
+    return comment.textContent.trim();
 }
 
 function notifyDiscordSubmission(submission: Snoowrap.Submission) {
