@@ -25,14 +25,15 @@ export let parser = new Parser();
 const timeToUpdateSidebar = 1000 * 60 * 10; // every 10 minutes - milliseconds * seconds * minutes
 // noinspection MagicNumberJS
 const timeToCheckForums = 1000 * 60 * 5; // every 5 minutes - milliseconds * seconds * minutes
-
+const MAX_COMMENT_LENGTH = 10_000;
 class MainEmitter extends EventEmitter {}
 export const mainEmitter = new MainEmitter;
 let currDate = new Date();
 
 const forum_original_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*[^?]$/;
-const forum_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*([^?]|(\?.*?post([0-9]*)))/;
+const forum_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9()]*)*(\?.*?post([0-9]*))?/;
 
+// noinspection JSIgnoredPromiseFromCall
 main();
 
 async function main() {
@@ -45,7 +46,8 @@ async function main() {
 
     mainEmitter.on("submission", function (submission: Snoowrap.Submission) {
         notifyDiscordSubmission(submission);
-        //checkIfForumThread(submission)
+        // noinspection JSIgnoredPromiseFromCall
+        checkIfForumThread(submission)
     });
 
     mainEmitter.on("forum_thread", function (forumThread: ForumThread) {
@@ -146,7 +148,8 @@ async function checkIfForumThread(submission: Snoowrap.Submission) {
     let regex = RegExp(forum_thread_match, 'gi');
     let match = regex.exec(submission.url);
     if (match) {
-        await migrateForumThreadToSubmission(submission, match[2]);
+        console.log(`Linked forum thread detected, posting copy-paste for '${submission.title}'`);
+        await migrateForumThreadToSubmission(submission, match[3]);
     }
 }
 
@@ -156,14 +159,14 @@ async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, l
     if (body instanceof Error) {
         return;
     }
-    body = body.replace(/\n/g, "\n>");
-
-    if (body.length < 2) {
-        submission.reply(`Copy-paste\n\n${body}\n\n---^(_This copy-paste was done by a bot, report if it is broken_)`);
+    body = ">" + body.replace(/\n/g, "\n>");
+    body = `Copy-paste\n\n${body}\n\n---\n^(_This copy-paste was done by a bot, report if it is broken_)`;
+    if (body.length < MAX_COMMENT_LENGTH) {
+        submission.reply(body);
     }
 }
 
-async function getLinkedThreadCommentBody(url: string, linked_comment: string = "") {
+async function getLinkedThreadCommentBody(url: string, linked_comment_id: string = "") {
     let body : string|Error = await axios.get(url).then(response => response.data).catch((err : Error) => err);
 
     if (body instanceof Error) {
@@ -172,9 +175,7 @@ async function getLinkedThreadCommentBody(url: string, linked_comment: string = 
     let dom = new JSDOM(body);
     let comment : HTMLElement|null;
 
-    if (linked_comment.match(/[a-z]+[0-9]+/)) {
-        linked_comment = linked_comment.replace("post", "post_message_");
-    }
+    let linked_comment = `post_message_${linked_comment_id}`;
 
     if (linked_comment.length > 0) {
         comment = dom.window.document.getElementById(linked_comment)
