@@ -37,6 +37,7 @@ const forum_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d
 main();
 
 async function main() {
+    console.log("Starting");
     const r = new Snoowrap(credentials);
     const snooStorm: any = new SnooStorm(r);
 
@@ -157,12 +158,16 @@ async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, l
     let body : string|Error = await getLinkedThreadCommentBody(submission.url, linked_comment);
 
     if (body instanceof Error) {
+        console.log("Could not get forum thread for copy-paste: ", body);
         return;
     }
     body = ">" + body.replace(/\n/g, "\n>");
     body = `Copy-paste\n\n${body}\n\n---\n^(_This copy-paste was done by a bot, report if it is broken_)`;
     if (body.length < MAX_COMMENT_LENGTH) {
         submission.reply(body);
+    }
+    else {
+        console.log(`Could not post forum thread copy-paste, length ${body.length}/${MAX_COMMENT_LENGTH}`);
     }
 }
 
@@ -176,8 +181,7 @@ async function getLinkedThreadCommentBody(url: string, linked_comment_id: string
     let comment : HTMLElement|null;
 
     let linked_comment = `post_message_${linked_comment_id}`;
-
-    if (linked_comment.length > 0) {
+    if (linked_comment_id.length > 0) {
         comment = dom.window.document.getElementById(linked_comment)
     }
     else {
