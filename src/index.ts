@@ -14,7 +14,7 @@ import frontier from "./frontier.json";
 import {updateServiceStatus} from "./sidebar/serviceStatus";
 import {updateCalendar} from "./sidebar/calendar";
 import ForumThread from "./objects/ForumThread";
-import {JSDOM} from "jsdom"
+import {DOMWindow, JSDOM} from "jsdom"
 
 // @ts-ignore
 import Parser from "rss-parser";
@@ -173,37 +173,36 @@ async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, l
     }
 }
 
-function formatHtmlToMarkdown(htmlElements: Element) {
+function formatHtmlToMarkdown(dom: DOMWindow, htmlElements: Element) {
     let body: string = "";
     htmlElements.childNodes.forEach((node: Node) => {
-        if (!(node instanceof Element)) {
+        if (!(node instanceof dom.Element)) {
+            body += node.textContent;
             return;
         }
         switch (node.constructor) {
-            case Text:
-                body += node.textContent;
-                break;
-            case HTMLElement:
+            case dom.HTMLElement:
                 if (node.tagName === "b") {
-                    body += `**${formatHtmlToMarkdown(node)}**`;
+                    body += `**${formatHtmlToMarkdown(dom, node)}**`;
+                }
+                else {
+                    body += node.textContent;
                 }
                 break;
-            case HTMLBRElement:
+            case dom.HTMLBRElement:
                 body += "\n";
                 break;
-            case HTMLUListElement:
-                body += formatHtmlToMarkdown(node);
-                body += "\n";
+            case dom.HTMLUListElement:
+                body += formatHtmlToMarkdown(dom, node);
                 break;
-            case HTMLLIElement:
-                body += `* ${formatHtmlToMarkdown(node)}`;
-                body += "\n";
+            case dom.HTMLLIElement:
+                body += `* ${formatHtmlToMarkdown(dom, node)}`;
                 break;
             default:
                 body += node.textContent;
-                body += "\n";
                 break;
         }
+
     });
     return body;
 }
@@ -228,7 +227,7 @@ async function getLinkedThreadCommentBody(url: string, linked_comment_id: string
         return new Error("could not get comment body");
     }
 
-    let body: string = formatHtmlToMarkdown(comment);
+    let body: string = formatHtmlToMarkdown(dom.window, comment);
 
     return body.trim();
 }
