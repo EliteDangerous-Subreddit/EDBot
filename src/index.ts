@@ -36,6 +36,7 @@ let currDate = new Date();
 
 const forum_original_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*[^?]$/;
 const forum_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9()]*)*(\?.*?post([0-9]*))?/;
+const footer = "This copy-paste was done by a bot, report this comment and downvote if something seems broken.";
 
 // noinspection JSIgnoredPromiseFromCall
 main();
@@ -165,7 +166,7 @@ async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, l
         return;
     }
     body = ">" + body.replace(/\n/g, "\n>");
-    body = `Copy-paste\n\n${body}\n\n---\n^(_This copy-paste was done by a bot, report if it is broken_)`;
+    body = `Copy-paste\n\n${body}\n\n---\n^(_${footer}_)`;
     if (body.length < MAX_COMMENT_LENGTH) {
         submission.reply(body);
     } else {
@@ -182,10 +183,11 @@ function formatHtmlToMarkdown(dom: DOMWindow, htmlElements: Element) {
         }
         switch (node.constructor) {
             case dom.HTMLElement:
-                if (node.tagName === "b") {
+                if (node.tagName === "B") {
                     body += `**${formatHtmlToMarkdown(dom, node)}**`;
-                }
-                else {
+                } else if (node.tagName === "I") {
+                    body += `_${formatHtmlToMarkdown(dom, node)}_`;
+                } else {
                     body += node.textContent;
                 }
                 break;
@@ -197,6 +199,7 @@ function formatHtmlToMarkdown(dom: DOMWindow, htmlElements: Element) {
                 break;
             case dom.HTMLLIElement:
                 body += `* ${formatHtmlToMarkdown(dom, node)}`;
+                body += "\n";
                 break;
             default:
                 body += node.textContent;
