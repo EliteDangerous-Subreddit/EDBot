@@ -14,10 +14,11 @@ import frontier from "./frontier.json";
 import {updateServiceStatus} from "./sidebar/serviceStatus";
 import {updateCalendar} from "./sidebar/calendar";
 import ForumThread from "./objects/ForumThread";
-import { JSDOM } from "jsdom"
+import {JSDOM} from "jsdom"
 
 // @ts-ignore
 import Parser from "rss-parser";
+
 export let parser = new Parser();
 
 
@@ -26,7 +27,10 @@ const timeToUpdateSidebar = 1000 * 60 * 10; // every 10 minutes - milliseconds *
 // noinspection MagicNumberJS
 const timeToCheckForums = 1000 * 60 * 5; // every 5 minutes - milliseconds * seconds * minutes
 const MAX_COMMENT_LENGTH = 10_000;
-class MainEmitter extends EventEmitter {}
+
+class MainEmitter extends EventEmitter {
+}
+
 export const mainEmitter = new MainEmitter;
 let currDate = new Date();
 
@@ -37,8 +41,7 @@ const forum_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d
 main();
 
 async function main() {
-    console.log("Starting");
-    const r = new Snoowrap(credentials);
+    console.log("Starting");const r = new Snoowrap(credentials);
     const snooStorm: any = new SnooStorm(r);
 
     updateSidebar(r);
@@ -67,15 +70,15 @@ function updateSidebar(r: Snoowrap) {
         .getWikiPage("config/sidebar")
         .fetch()
         .then(async (sidebar: Snoowrap.WikiPage) => {
-            let sidebar_text: string|Error = sidebar.content_md;
+            let sidebar_text: string | Error = sidebar.content_md;
 
-            sidebar_text = await updateServiceStatus(sidebar_text).catch((err : Error) => err);
+            sidebar_text = await updateServiceStatus(sidebar_text).catch((err: Error) => err);
             if (sidebar_text instanceof Error) {
                 console.log(sidebar_text);
                 return;
             }
 
-            sidebar_text = await updateCalendar(sidebar_text).catch((err : Error) => err);
+            sidebar_text = await updateCalendar(sidebar_text).catch((err: Error) => err);
             if (sidebar_text instanceof Error) {
                 console.log(sidebar_text);
                 return;
@@ -99,7 +102,7 @@ async function monitorForums() {
         // Is it a new thread?
         if (item.link.match(forum_original_thread_match)) {
             let thread = new ForumThread;
-            let titleMatch : RegExpMatchArray|null = item.title.match(/^(.*?) - (.*)\((.*)\)$/);
+            let titleMatch: RegExpMatchArray | null = item.title.match(/^(.*?) - (.*)\((.*)\)$/);
             if (titleMatch !== null) {
                 thread.title = titleMatch[2];
                 thread.from = titleMatch[1];
@@ -155,7 +158,7 @@ async function checkIfForumThread(submission: Snoowrap.Submission) {
 }
 
 async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, linked_comment: string = "") {
-    let body : string|Error = await getLinkedThreadCommentBody(submission.url, linked_comment);
+    let body: string | Error = await getLinkedThreadCommentBody(submission.url, linked_comment);
 
     if (body instanceof Error) {
         console.log("Could not get forum thread for copy-paste: ", body);
@@ -165,32 +168,69 @@ async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, l
     body = `Copy-paste\n\n${body}\n\n---\n^(_This copy-paste was done by a bot, report if it is broken_)`;
     if (body.length < MAX_COMMENT_LENGTH) {
         submission.reply(body);
-    }
-    else {
+    } else {
         console.log(`Could not post forum thread copy-paste, length ${body.length}/${MAX_COMMENT_LENGTH}`);
     }
 }
 
-async function getLinkedThreadCommentBody(url: string, linked_comment_id: string = "") {
-    let body : string|Error = await axios.get(url).then(response => response.data).catch((err : Error) => err);
+function formatHtmlToMarkdown(htmlElements: Element) {
+    let body: string = "";
+    htmlElements.childNodes.forEach((node: Node) => {
+        if (!(node instanceof Element)) {
+            return;
+        }
+        switch (node.constructor) {
+            case Text:
+                body += node.textContent;
+                break;
+            case HTMLElement:
+                if (node.tagName === "b") {
+                    body += `**${formatHtmlToMarkdown(node)}**`;
+                }
+                break;
+            case HTMLBRElement:
+                body += "\n";
+                break;
+            case HTMLUListElement:
+                body += formatHtmlToMarkdown(node);
+                body += "\n";
+                break;
+            case HTMLLIElement:
+                body += `* ${formatHtmlToMarkdown(node)}`;
+                body += "\n";
+                break;
+            default:
+                body += node.textContent;
+                body += "\n";
+                break;
+        }
+    });
+    return body;
+}
 
-    if (body instanceof Error) {
-        return body;
+async function getLinkedThreadCommentBody(url: string, linked_comment_id: string = "") {
+    let response: string | Error = await axios.get(url).then(response => response.data).catch((err: Error) => err);
+
+    if (response instanceof Error) {
+        return response;
     }
-    let dom = new JSDOM(body);
-    let comment : HTMLElement|null;
+    let dom = new JSDOM(response);
+    let comment: HTMLElement | null;
 
     let linked_comment = `post_message_${linked_comment_id}`;
     if (linked_comment_id.length > 0) {
         comment = dom.window.document.getElementById(linked_comment)
-    }
-    else {
+    } else {
         comment = dom.window.document.querySelector(".postbody .content .postcontent")
     }
+
     if (comment === null || comment.textContent === null) {
         return new Error("could not get comment body");
     }
-    return comment.textContent.trim();
+
+    let body: string = formatHtmlToMarkdown(comment);
+
+    return body.trim();
 }
 
 function notifyDiscordSubmission(submission: Snoowrap.Submission) {

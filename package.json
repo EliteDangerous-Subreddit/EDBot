@@ -11,7 +11,7 @@
   },
   "scripts": {
     "start": "npm run build:live",
-    "build": "tsc -p .",
+    "build": "ts-node ./src/index.ts",
     "build:live": "nodemon"
   },
   "devDependencies": {
