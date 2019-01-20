@@ -182,14 +182,8 @@ function formatHtmlToMarkdown(dom: DOMWindow, htmlElements: Element) {
             return;
         }
         switch (node.constructor) {
-            case dom.HTMLElement:
-                if (node.tagName === "B") {
-                    body += `**${formatHtmlToMarkdown(dom, node)}**`;
-                } else if (node.tagName === "I") {
-                    body += `_${formatHtmlToMarkdown(dom, node)}_`;
-                } else {
-                    body += node.textContent;
-                }
+            case dom.HTMLAnchorElement:
+                body += `[${formatHtmlToMarkdown(dom, node)}](${node.getAttribute("href")})`;
                 break;
             case dom.HTMLBRElement:
                 body += "\n";
@@ -200,6 +194,16 @@ function formatHtmlToMarkdown(dom: DOMWindow, htmlElements: Element) {
             case dom.HTMLLIElement:
                 body += `* ${formatHtmlToMarkdown(dom, node)}`;
                 body += "\n";
+                break;
+            case dom.HTMLElement:
+                if (node.tagName === "B") {
+                    body += `**${formatHtmlToMarkdown(dom, node)}**`;
+                } else if (node.tagName === "I") {
+                    body += `_${formatHtmlToMarkdown(dom, node)}_`;
+                } else {
+                    console.log(node.tagName);
+                    body += node.textContent;
+                }
                 break;
             default:
                 body += node.textContent;
@@ -221,7 +225,10 @@ async function getLinkedThreadCommentBody(url: string, linked_comment_id: string
 
     let linked_comment = `post_message_${linked_comment_id}`;
     if (linked_comment_id.length > 0) {
-        comment = dom.window.document.getElementById(linked_comment)
+        comment = dom.window.document.getElementById(linked_comment);
+        if (comment !== null) {
+            comment = comment.querySelector(".postcontent");
+        }
     } else {
         comment = dom.window.document.querySelector(".postbody .content .postcontent")
     }
