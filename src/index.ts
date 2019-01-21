@@ -27,6 +27,7 @@ const timeToUpdateSidebar = 1000 * 60 * 10; // every 10 minutes - milliseconds *
 // noinspection MagicNumberJS
 const timeToCheckForums = 1000 * 60 * 5; // every 5 minutes - milliseconds * seconds * minutes
 const MAX_COMMENT_LENGTH = 10_000;
+const FRONTIER_URL = "https://forums.frontier.co.uk/";
 
 class MainEmitter extends EventEmitter {
 }
@@ -178,12 +179,32 @@ function formatHtmlToMarkdown(dom: DOMWindow, htmlElements: Element) {
     let body: string = "";
     htmlElements.childNodes.forEach((node: Node) => {
         if (!(node instanceof dom.Element)) {
-            body += node.textContent;
+            body += node.textContent ? node.textContent.replace(/\u0009+/g,'') : node.textContent;
             return;
         }
         switch (node.constructor) {
+            case dom.HTMLDivElement:
+                // if it is a container, most likely a vBulletin quote
+                if (node.classList.contains("bbcode_container")) {
+                    let quote = node.querySelector(".quote_container");
+                    if (quote === null) {
+                        break
+                    }
+                    body += ">" + formatHtmlToMarkdown(dom, quote).replace(/\n/g, "\n>");
+                    body += "\n\n";
+                }
+                else {
+                    body += formatHtmlToMarkdown(dom, node);
+                }
+                break;
             case dom.HTMLAnchorElement:
-                body += `[${formatHtmlToMarkdown(dom, node)}](${node.getAttribute("href")})`;
+                let url = node.getAttribute("href");
+                if (url === null) {
+                    break
+                }
+                url = url.match(/^http/) ? url : FRONTIER_URL + url;
+
+                body += `[${formatHtmlToMarkdown(dom, node)}](${url})`;
                 break;
             case dom.HTMLBRElement:
                 body += "\n";
@@ -196,14 +217,17 @@ function formatHtmlToMarkdown(dom: DOMWindow, htmlElements: Element) {
                 body += "\n";
                 break;
             case dom.HTMLElement:
-                if (node.tagName === "B") {
-                    body += `**${formatHtmlToMarkdown(dom, node)}**`;
-                } else if (node.tagName === "I") {
-                    body += `_${formatHtmlToMarkdown(dom, node)}_`;
-                } else {
-                    console.log(node.tagName);
+                if (node.getAttribute("aria-hidden") === "true") {
                     body += node.textContent;
+                } else {
+                    if (node.tagName === "B" || node.tagName === "STRONG") {
+                        body += ` **${formatHtmlToMarkdown(dom, node).trim()}** `;
+                    } else if (node.tagName === "I") {
+                        body += ` _${formatHtmlToMarkdown(dom, node).trim()}_ `;
+                    }
                 }
+                break;
+            case dom.HTMLImageElement:
                 break;
             default:
                 body += node.textContent;
@@ -239,7 +263,7 @@ async function getLinkedThreadCommentBody(url: string, linked_comment_id: string
 
     let body: string = formatHtmlToMarkdown(dom.window, comment);
 
-    return body.trim();
+    return body.replace(/\u0020{2,}/g, " ").trim();
 }
 
 function notifyDiscordSubmission(submission: Snoowrap.Submission) {
