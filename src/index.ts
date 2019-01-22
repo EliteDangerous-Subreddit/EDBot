@@ -43,7 +43,8 @@ const footer = "This copy-paste was done by a bot, report this comment and downv
 main();
 
 async function main() {
-    console.log("Starting");const r = new Snoowrap(credentials);
+    console.log("Starting");
+    const r = new Snoowrap(credentials);
     const snooStorm: any = new SnooStorm(r);
 
     updateSidebar(r);
@@ -167,12 +168,66 @@ async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, l
         return;
     }
     body = ">" + body.replace(/\n/g, "\n>");
-    body = `Copy-paste\n\n${body}\n\n---\n^(_${footer}_)`;
-    if (body.length < MAX_COMMENT_LENGTH) {
-        submission.reply(body);
-    } else {
-        console.log(`Could not post forum thread copy-paste, length ${body.length}/${MAX_COMMENT_LENGTH}`);
+
+    let template_length = `Copy-paste\n\n\n\n---\n^(_${footer}_)`.length;
+    if (body.length + template_length > MAX_COMMENT_LENGTH) {
+        let split_body: Array<string> = splitIntoSegments(body, MAX_COMMENT_LENGTH - template_length);
+        let last_reply: Snoowrap.Comment|Error|null = null;
+        for (let i = 0; i < split_body.length; i++) {
+            if (i === 0) {
+                body = `Copy-paste\n\n${split_body[i]}\n\n---\n^(_${footer}_)`;
+            }
+            else {
+                body = `${split_body[i]}\n\n---\n^(_${footer}_)`;
+            }
+            if (last_reply) {
+                // @ts-ignore
+                last_reply = await last_reply.reply(body).then(reply => reply);
+            }
+            else {
+                // @ts-ignore
+                last_reply = await submission.reply(body).then(reply => reply);
+                if (last_reply instanceof Error) {
+                    throw last_reply;
+                }
+            }
+        }
     }
+    else {
+        body = `Copy-paste\n\n${body}\n\n---\n^(_${footer}_)`;
+        if (body.length < MAX_COMMENT_LENGTH) {
+            submission.reply(body);
+        } else {
+            console.log(`Could not post forum thread copy-paste, length ${body.length}/${MAX_COMMENT_LENGTH}`);
+        }
+    }
+}
+
+function splitIntoSegments(body: string, max_length: number): Array<string> {
+    let segments: Array<string> = [];
+    let newline_pos: number = -1;
+    let first_new_line: number = -1;
+    for (let i = max_length; i >= 0; i--) {
+        if (body.length <= max_length) {
+            segments.push(body);
+            break;
+        }
+        else if (body[i] === "\n") {
+            if (newline_pos === -1) {
+                first_new_line = i;
+            }
+            newline_pos = i;
+        }
+        else if (newline_pos !== -1) {
+            segments.push(body.substring(0, newline_pos));
+            break;
+        }
+    }
+    if (body.length > max_length && first_new_line !== -1) {
+        let results = splitIntoSegments(body.substring(first_new_line, body.length), max_length);
+        segments = segments.concat(results);
+    }
+    return segments;
 }
 
 function formatHtmlToMarkdown(dom: DOMWindow, htmlElements: Element) {
