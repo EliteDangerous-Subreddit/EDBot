@@ -38,6 +38,7 @@ let currDate = new Date();
 const forum_original_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*[^?]$/;
 const forum_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9()]*)*(\?.*?post([0-9]*))?/;
 const footer = "This copy-paste was done by a bot, report this comment and downvote if something seems broken.";
+let lastHandledPosts: string[];
 
 // noinspection JSIgnoredPromiseFromCall
 main();
@@ -52,14 +53,30 @@ async function main() {
     let ignored = monitorForums();
 
     mainEmitter.on("submission", function (submission: Snoowrap.Submission) {
+        if (submissionHasBeenProcessed(submission)) {
+            return;
+        }
         notifyDiscordSubmission(submission);
         // noinspection JSIgnoredPromiseFromCall
-        checkIfForumThread(submission)
+        checkIfForumThread(submission);
+
+        submissionProcessed(submission);
     });
 
     mainEmitter.on("forum_thread", function (forumThread: ForumThread) {
         notifyDiscordForumThread(forumThread);
     })
+}
+
+function submissionHasBeenProcessed(submission: Snoowrap.Submission): boolean {
+    return lastHandledPosts.indexOf(submission.id) !== -1;
+}
+
+function submissionProcessed(submission: Snoowrap.Submission): void {
+    if (lastHandledPosts.length >= 20){
+        lastHandledPosts.shift();
+    }
+    lastHandledPosts.push(submission.id);
 }
 
 /**
