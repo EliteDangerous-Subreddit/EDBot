@@ -52,20 +52,10 @@ async function main() {
     monitorSubmissions(snooStorm);
     let ignored = monitorForums();
 
-    mainEmitter.on("submission", function (submission: Snoowrap.Submission) {
-        if (submissionHasBeenProcessed(submission)) {
-            return;
-        }
-        notifyDiscordSubmission(submission);
-        // noinspection JSIgnoredPromiseFromCall
-        checkIfForumThread(submission);
+    mainEmitter.on("submission", notifyDiscordSubmission);
+    mainEmitter.on("submission", checkIfForumThread);
 
-        submissionProcessed(submission);
-    });
-
-    mainEmitter.on("forum_thread", function (forumThread: ForumThread) {
-        notifyDiscordForumThread(forumThread);
-    })
+    mainEmitter.on("forum_thread", notifyDiscordForumThread)
 }
 
 function submissionHasBeenProcessed(submission: Snoowrap.Submission): boolean {
@@ -172,8 +162,12 @@ async function checkIfForumThread(submission: Snoowrap.Submission) {
     let regex = RegExp(forum_thread_match, 'gi');
     let match = regex.exec(submission.url);
     if (match) {
+        if (submissionHasBeenProcessed(submission)) {
+            return;
+        }
         console.log(`Linked forum thread detected, posting copy-paste for '${submission.title}'`);
         await migrateForumThreadToSubmission(submission, match[3]);
+        submissionProcessed(submission);
     }
 }
 
