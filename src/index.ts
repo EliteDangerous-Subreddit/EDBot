@@ -84,7 +84,7 @@ function submissionProcessed(submission: Snoowrap.Submission): void {
  * @param {Snoowrap} r
  */
 function updateSidebar(r: Snoowrap) {
-    console.log(`[${moment().format("HH:mm.SSS")}] Checking if sidebar needs to be updated`);
+    console.log(`Checking if sidebar needs to be updated`);
     setTimeout(updateSidebar, timeToUpdateSidebar, r);
     r.getSubreddit('EliteDangerous')
         .getWikiPage("config/sidebar")
@@ -115,7 +115,7 @@ function updateSidebar(r: Snoowrap) {
 
 async function monitorForums() {
     setTimeout(monitorForums, timeToCheckForums);
-    console.log(`[${moment().format("HH:mm.SSS")}] Checking new forum posts`);
+    console.log(`Checking new forum posts`);
     let feed = await parser.parseURL('https://ed.miggy.org/devtracker/ed-dev-posts.rss');
 
     feed.items.forEach(item => {
@@ -186,16 +186,16 @@ async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, l
     }
     body = ">" + body.replace(/\n/g, "\n>");
 
-    let template_length = `Copy-paste\n\n\n\n---\n^(_${footer}_)`.length;
+    let template_length = `Copy-paste: comment 10/10\n\n\n\n---\n^(_${footer}_)`.length;
     if (body.length + template_length > MAX_COMMENT_LENGTH) {
         let split_body: Array<string> = splitIntoSegments(body, MAX_COMMENT_LENGTH - template_length);
         let last_reply: Snoowrap.Comment|Error|null = null;
         for (let i = 0; i < split_body.length; i++) {
             if (i === 0) {
-                body = `Copy-paste\n\n${split_body[i]}\n\n---\n^(_${footer}_)`;
+                body = `Copy-paste: comment ${i}/${split_body.length}\n\n${split_body[i]}\n\n---\n^(_${footer}_)`;
             }
             else {
-                body = `${split_body[i]}\n\n---\n^(_${footer}_)`;
+                body = `Copy-paste: comment ${i}/${split_body.length}\n\n${split_body[i]}\n\n---\n^(_${footer}_)`;
             }
             if (last_reply) {
                 // @ts-ignore
