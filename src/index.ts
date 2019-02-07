@@ -184,13 +184,8 @@ async function migrateForumThreadToSubmission(submission: Snoowrap.Submission, l
     if (body.length + template_length > MAX_COMMENT_LENGTH) {
         let split_body: Array<string> = splitIntoSegments(body, MAX_COMMENT_LENGTH - template_length);
         let last_reply: Snoowrap.Comment|Error|null = null;
-        for (let i = 0; i < split_body.length; i++) {
-            if (i === 0) {
-                body = `Copy-paste: comment ${i}/${split_body.length}\n\n${split_body[i]}\n\n---\n^(_${footer}_)`;
-            }
-            else {
-                body = `Copy-paste: comment ${i}/${split_body.length}\n\n${split_body[i]}\n\n---\n^(_${footer}_)`;
-            }
+        for (let i = 0; i < split_body.length; ++i) {
+            body = `Copy-paste: comment ${i}/${split_body.length}\n\n${split_body[i]}\n\n---\n^(_${footer}_)`;
             if (last_reply) {
                 // @ts-ignore
                 last_reply = await last_reply.reply(body).then(reply => reply);
