@@ -35,7 +35,7 @@ class MainEmitter extends EventEmitter {
 export const mainEmitter = new MainEmitter;
 let currDate = new Date();
 
-const forum_original_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9]*)*[^?]$/;
+const forum_original_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9()]*)*[^?]$/;
 const forum_thread_match = /^https:\/\/forums.frontier.co.uk\/showthread.php\/\d*(-[A-Za-z0-9()]*)*(\?.*?post([0-9]*))?/;
 const footer = "This copy-paste was done by a bot, report this comment and downvote if something seems broken.";
 let lastHandledPosts: string[] = [];
